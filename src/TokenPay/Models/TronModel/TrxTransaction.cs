@@ -9,7 +9,7 @@ using TokenPay.Extensions;
 
 namespace TokenPay.Models.TronModel
 {
-    // Root myDeserializedClass = JsonSerializer.Deserialize<Root>(myJsonResponse);
+#pragma warning disable CS8618 // 在退出构造函数时，不可为 null 的字段必须包含非 null 值。请考虑声明为可以为 null。
     public class Contract
     {
         [JsonProperty("parameter")]
@@ -116,8 +116,7 @@ namespace TokenPay.Models.TronModel
 
         [JsonProperty("to_address")]
         public string ToAddress { get; set; }
-        public string ToAddressBase58 => ToAddress.DecodeBase58();
+        public string ToAddressBase58 => ToAddress.HexToeBase58();
     }
-
-
+#pragma warning restore CS8618 // 在退出构造函数时，不可为 null 的字段必须包含非 null 值。请考虑声明为可以为 null。
 }

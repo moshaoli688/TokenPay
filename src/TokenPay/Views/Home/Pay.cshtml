@@ -1,5 +1,7 @@
 ﻿@{
     ViewData["Title"] = "支付页";
+    var Now = DateTime.Now.ToUniversalTime();
+    var ExpireTime = ViewData.ContainsKey("ExpireTime") ? Convert.ToDateTime(ViewData["ExpireTime"]).ToUniversalTime() : Now;
 }
 @using TokenPay.Domains;
 @using TokenPay.Extensions
@@ -59,12 +61,12 @@ else
                 订单编号：<span class="text-danger">@Model.OutOrderId</span>
             </div>
             <div class="mb-2">
-                过期时间：<span class="text-danger">@ViewData["ExpireTime"]</span>
+                过期时间：<span class="text-danger">@ExpireTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</span>
             </div>
             <div class="mt-4 text-start">
                 <div>区块链货币购买地址</div>
-                <div>1. 在 <a href="https://www.okx.com/buy-@Model.Currency.ToCurrency(chain)/cny" target="_blank">OKX（欧易）</a> 购买 <span class="text-danger">@Model.Currency.ToCurrency(chain)</span></div>
-                <div>2. 在 <a href="https://p2p.binance.com/zh-CN/express/buy/@Model.Currency.ToCurrency(chain)/CNY" target="_blank">Binance（币安）</a> 购买 <span class="text-danger">@Model.Currency.ToCurrency(chain)</span></div>
+                <div>1. 在 <a href="https://www.okx.com/buy-crypto#sourceBase=@Model.Currency.ToCurrency(chain)" target="_blank">OKX（欧易）</a> 购买 <span class="text-danger">@Model.Currency.ToCurrency(chain)</span></div>
+                <div>2. 在 <a href="https://p2p.binance.com/express/buy/@Model.Currency.ToCurrency(chain)" target="_blank">Binance（币安）</a> 购买 <span class="text-danger">@Model.Currency.ToCurrency(chain)</span></div>
             </div>
         </div>
     </div>
@@ -72,10 +74,10 @@ else
     @section Scripts{
     <script>
         let Time;
-        var EndTime = new Date('@ViewData["ExpireTime"]?.ToString()?.Replace("-","/")');
+        var EndTime = new Date('@ExpireTime.ToUniversalTime().ToString("yyyy/MM/dd HH:mm:ss")');
         function timer() {
             window.setInterval(function () {
-                var intDiff = (EndTime - new Date()) / 1000
+                var intDiff = (EndTime - new Date(new Date().toISOString().replace('T',' ').replace('Z',''))) / 1000
                 if (intDiff <= 0) return;
                 $(".time").removeClass("invisible")
                 var day = 0,

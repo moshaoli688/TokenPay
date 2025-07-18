@@ -71,7 +71,7 @@ URL: `/CreateOrder`
         "OutOrderId": "AJIHK72N34BR2CWG", //商户订单号
         "QrCodeBase64": "data:image/png;base64,xxxxxxxxx", //base64格式的图片
         "QrCodeLink": "http://127.0.0.1:5000/GetQrCode?Id=644bc479-df0c-3f1c-00fe-9cb3012b148b", //二维码图片链接，如需修改图片尺寸，可拼接参数 &Size=xxx, 这里的xxx为数字，表示图片宽高，默认为300
-        "ToAddress": "TLUF41C386CMU1Wc8pTSCE4QaiZ2xkhTCb" //付款地址
+        "ToAddress": "TKGTx4pCKiKQbk8evXHTborfZn754TGViP" //付款地址
     }
 }
 ```
@@ -86,8 +86,9 @@ URL: `/CreateOrder`
 
 
 ## 2. `TokenPay`的异步回调参数
->如接口返回的状态码不是`200`，或者响应的内容不是字符串`ok`，视为回调失败。  
->回调失败后将会在一分钟后重试，总共重试两次。  
+>1. 仅支付成功才会产生回调，订单支付超时不会回调，原因参考 [点此查看](https://t.me/TokenPayGroup/99082)
+>2. 如接口返回的状态码不是`200`，或者响应的内容不是字符串`ok`，视为回调失败。  
+>3. 回调失败后将会在一分钟后重试，总共重试两次。  
 
 URL: `创建订单`接口传递的`NotifyUrl`字段内的URL  
 
@@ -109,8 +110,12 @@ URL: `创建订单`接口传递的`NotifyUrl`字段内的URL
 | ActualAmount | string | 订单金额，此金额为法币金额 |
 | FromAddress | string | 付款地址 |
 | ToAddress | string | 收款地址 |
+| Status | int | 状态 0 等待支付 1 已支付 2 订单过期 |
 | PassThroughInfo | string | 创建订单如提供了此字段，在回调通知或订单信息中会原样返回 |
-| Signature | string | 签名，`接口请务必验证此参数！！！`将除`Signature`字段外的所有字段，按照字母升序排序。按顺序拼接为`key1=value1&key2=value2`形式，然后在末尾拼接上`异步通知密钥`，将此字符串计算MD5，即为签名。 |
+| PayAmount | string | 实际支付金额，新增动态金额功能时新增此字段 |
+| IsDynamicAmount | int | 是否是动态金额订单，新增动态金额功能时新增此字段 |
+| Signature | string | 签名，`接口请务必验证此参数！！！`将除`Signature`字段外的所有字段，按照字母升序排序，忽略没有值的字段，按顺序拼接为`key1=value1&key2=value2`形式，然后在末尾拼接上`异步通知密钥`，将此字符串计算MD5，即为签名。 |
+| **重要说明** | ---- | **以上字段列表仅供参考，具体以实际传递的字段为准，实际字段数量可能会有增减，因此签名验证算法建议直接解析body内的json字符串，可参考 [TokenPayController.php](../Plugs//dujiaoka/app/Http/Controllers/Pay/TokenPayController.php) 中的 `VerifySign`** |
 
 ### ①示例POST参数
 ```json
@@ -122,26 +127,72 @@ URL: `创建订单`接口传递的`NotifyUrl`字段内的URL
     "BlockTransactionId": "375859c36dc5f5d227b10912b5ec70d36dd34446028064956cb60cdbb74432f5",
     "Currency": "TRX",
     "CurrencyName": "TRX",
-    "ExpireTime": "2022-09-15 17:08:23",
     "FromAddress": "TYYjzt6AWhe9hAg9DrhiYXEWKDksyohgQa",
     "Id": "63234df7-55bf-93fc-0010-67be493c0c27",
-    "OrderUserKey": null,
     "OutOrderId": "E6COE6FGZMO5AXSK",
-    "PassThroughInfo": null,
     "PayTime": "2022-09-15 16:08:39",
     "Status": 1,
-    "ToAddress": "TLUF41C386CMU1Wc8pTSCE4QaiZ2xkhTCb"
+    "ToAddress": "TKGTx4pCKiKQbk8evXHTborfZn754TGViP"
 }
 ```
 ### ②按照ASCII排序后拼接
-`ActualAmount=15&Amount=34.91&BaseCurrency=CNY&BlockchainName=TRON&BlockTransactionId=375859c36dc5f5d227b10912b5ec70d36dd34446028064956cb60cdbb74432f5&Currency=TRX&CurrencyName=TRX&ExpireTime=2022-09-15 17:08:23&FromAddress=TYYjzt6AWhe9hAg9DrhiYXEWKDksyohgQa&Id=63234df7-55bf-93fc-0010-67be493c0c27&OrderUserKey=&OutOrderId=E6COE6FGZMO5AXSK&PassThroughInfo=&PayTime=2022-09-15 16:08:39&Status=1&ToAddress=TLUF41C386CMU1Wc8pTSCE4QaiZ2xkhTCb`
+`ActualAmount=15&Amount=34.91&BaseCurrency=CNY&BlockChainName=TRON&BlockTransactionId=375859c36dc5f5d227b10912b5ec70d36dd34446028064956cb60cdbb74432f5&Currency=TRX&CurrencyName=TRX&FromAddress=TYYjzt6AWhe9hAg9DrhiYXEWKDksyohgQa&Id=63234df7-55bf-93fc-0010-67be493c0c27&OutOrderId=E6COE6FGZMO5AXSK&PayTime=2022-09-15 16:08:39&Status=1&ToAddress=TKGTx4pCKiKQbk8evXHTborfZn754TGViP`
 
-异步通知密钥为：`666`
+假设异步通知密钥为：`666`
 
 拼接密钥后
-`ActualAmount=15&Amount=34.91&BaseCurrency=CNY&BlockchainName=TRON&BlockTransactionId=375859c36dc5f5d227b10912b5ec70d36dd34446028064956cb60cdbb74432f5&Currency=TRX&CurrencyName=TRX&ExpireTime=2022-09-15 17:08:23&FromAddress=TYYjzt6AWhe9hAg9DrhiYXEWKDksyohgQa&Id=63234df7-55bf-93fc-0010-67be493c0c27&OrderUserKey=&OutOrderId=E6COE6FGZMO5AXSK&PassThroughInfo=&PayTime=2022-09-15 16:08:39&Status=1&ToAddress=TLUF41C386CMU1Wc8pTSCE4QaiZ2xkhTCb666`
+`ActualAmount=15&Amount=34.91&BaseCurrency=CNY&BlockChainName=TRON&BlockTransactionId=375859c36dc5f5d227b10912b5ec70d36dd34446028064956cb60cdbb74432f5&Currency=TRX&CurrencyName=TRX&FromAddress=TYYjzt6AWhe9hAg9DrhiYXEWKDksyohgQa&Id=63234df7-55bf-93fc-0010-67be493c0c27&OutOrderId=E6COE6FGZMO5AXSK&PayTime=2022-09-15 16:08:39&Status=1&ToAddress=TKGTx4pCKiKQbk8evXHTborfZn754TGViP666`
 
 ### ③计算MD5
-`e20586476112bdfc9b32d8a4e264416e`
+`e5eaa888cd9e80b5c09a0698981757c8`
 
 对比POST中的`Signature`是否与此值一致
+
+
+## 3. 查单接口
+
+URL: `/Query?Id=[订单Id]&Signature=[签名]`  
+
+类型： `GET`
+
+示例返回
+```json
+{
+    "success": false,
+    "message": "订单不存在！"
+}
+```
+```json
+{
+    "success": true,
+    "message": "订单信息获取成功！",
+    "data": {
+        "id": "66f9d5a8-d9c7-0224-004f-a16a1c068e08",
+        ......
+    }
+}
+```
+
+| 字段 | 类型 |说明 |
+| ---- | ---- | ---- |
+| **此接口返回订单表所有字段** |
+| **可参考回调数据的字段，也可查阅源代码** |
+
+### 查单接口 `Signature` 计算说明
+### ①示例参数
+```
+/Query?Id=66f9d5a8-d9c7-0224-004f-a16a1c068e08
+```
+### ②按照ASCII排序后拼接
+`Id=66f9d5a8-d9c7-0224-004f-a16a1c068e08`
+
+假设异步通知密钥为：`666`
+
+拼接密钥后
+`Id=66f9d5a8-d9c7-0224-004f-a16a1c068e08666`
+
+### ③计算MD5
+`baa261cc6af3f5efbed15e17a285f653`
+
+### ④最终请求参数为
+`/Query?Id=66f9d5a8-d9c7-0224-004f-a16a1c068e08&Signature=baa261cc6af3f5efbed15e17a285f653`

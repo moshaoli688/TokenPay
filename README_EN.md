@@ -1,7 +1,7 @@
 # TokenPay
 <p>
 <a href="https://www.gnu.org/licenses/gpl-3.0.html"><img src="https://img.shields.io/badge/license-GPLV3-blue" alt="license GPLV3"></a>
-<a href="https://www.php.net/releases/7_4_0.php"><img src="https://img.shields.io/badge/.NET-6-orange" alt=".net6"></a>
+<a href="https://dotnet.microsoft.com/en-us/download/dotnet/8.0"><img src="https://img.shields.io/badge/.NET-8-orange" alt=".net8"></a>
 <a href="https://github.com/assimon/dujiaoka/releases/tag/1.0.0"><img src="https://img.shields.io/badge/version-1.0.0-red" alt="version 1.0.0"></a>
 </p>
 <h2 align="center"><a href="README.md">简体中文</a> | English</h2>  
@@ -10,11 +10,6 @@
 
 >An open source payment solution that supports receiving `TRX`, `USDT-TRC20` and `ETH native coins` as well as `ETH ERC20 tokens` with dynamic or static payout addresses! Theoretically supports `all ETH-system blockchains`, common ETH-system blockchains are: `Ether (ETH)`, `Binance Smart Chain (BSC)`, `Polygon`, etc.
 
-## AD -- Receive free international credit card
->Receive free VISA and Mastercard, recharge USDT and you can use it as you like  
-You can connect to WeChat, Alipay, and AppStore in the U.S.  
-Come and get your international bank card that can be used for USDT!   
-➡️➡️➡️ [Click to get your international credit card](https://depay.depay.one/web-app/register-h5?invitCode=949656&lang=zh-cn)
 
 ## Project Description
 - `TokenPay` is a privately deployed `blockchain` payment solution written in `C# language`.     

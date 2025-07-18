@@ -29,6 +29,15 @@ namespace TokenPay.Domains
         /// </summary>
         public DateTime? PayTime { get; set; }
         /// <summary>
+        /// 订单实际支付的金额，保留2位小数
+        /// </summary>
+        [Column(Precision = 15, Scale = 2)]
+        public decimal? PayAmount { get; set; }
+        /// <summary>
+        /// 是否动态金额订单
+        /// </summary>
+        public bool IsDynamicAmount { get; set; }
+        /// <summary>
         /// 来源地址
         /// </summary>
         public string? FromAddress { get; set; } = null!;
@@ -40,7 +49,7 @@ namespace TokenPay.Domains
         /// <summary>
         /// 区块链币种
         /// </summary>
-        public string Currency { get; set; }
+        public required string Currency { get; set; }
         /// <summary>
         /// 订单金额，保留4位小数
         /// </summary>

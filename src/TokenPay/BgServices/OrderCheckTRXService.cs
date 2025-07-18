@@ -11,30 +11,29 @@ namespace TokenPay.BgServices
 {
     public class OrderCheckTRXService : BaseScheduledService
     {
-        private readonly ILogger<OrderCheckTRXService> _logger;
         private readonly IConfiguration _configuration;
         private readonly IHostEnvironment _env;
         private readonly Channel<TokenOrders> _channel;
-        private readonly IServiceProvider _serviceProvider;
+        private readonly IFreeSql freeSql;
+        private bool UseDynamicAddress => _configuration.GetValue("UseDynamicAddress", true);
+        private bool UseDynamicAddressAmountMove => _configuration.GetValue("DynamicAddressConfig:AmountMove", false);
 
         public OrderCheckTRXService(ILogger<OrderCheckTRXService> logger,
             IConfiguration configuration,
             IHostEnvironment env,
             Channel<TokenOrders> channel,
-            IServiceProvider serviceProvider) : base("TRX订单检测", TimeSpan.FromSeconds(3), logger)
+            IFreeSql freeSql) : base("TRX订单检测", TimeSpan.FromSeconds(3), logger)
         {
-            _logger = logger;
             this._configuration = configuration;
             this._env = env;
             this._channel = channel;
-            _serviceProvider = serviceProvider;
+            this.freeSql = freeSql;
         }
 
-        protected override async Task ExecuteAsync()
+        protected override async Task ExecuteAsync(DateTime RunTime, CancellationToken stoppingToken)
         {
-            using IServiceScope scope = _serviceProvider.CreateScope();
-            var _repository = scope.ServiceProvider.GetRequiredService<IBaseRepository<TokenOrders>>();
-            var _TokensRepository = scope.ServiceProvider.GetRequiredService<IBaseRepository<Tokens>>();
+            var _repository = freeSql.GetRepository<TokenOrders>();
+            var _TokensRepository = freeSql.GetRepository<Tokens>();
 
             var Address = await _repository
                 .Where(x => x.Status == OrderStatus.Pending)
@@ -74,7 +73,7 @@ namespace TokenPay.BgServices
                     .SetQueryParams(query)
                     .WithTimeout(15);
                 if (_env.IsProduction())
-                    req = req.WithHeader("TRON-PRO-API-KEY", _configuration.GetValue("TRON-PRO-API-KEY", ""));
+                    req = req.WithHeader("TRON-PRO-API-KEY", _configuration.GetValue<string>("TRON-PRO-API-KEY"));
                 var result = await req
                     .GetJsonAsync<BaseResponse<TrxTransaction>>();
 
@@ -106,15 +105,39 @@ namespace TokenPay.BgServices
                         var order = orders.Where(x => x.Amount == raw.RealAmount && x.ToAddress == raw.ToAddressBase58 && x.CreateTime < item.BlockTimestamp.ToDateTime())
                             .OrderByDescending(x => x.CreateTime)//优先付最后一单
                             .FirstOrDefault();
+                    recheck:
                         if (order != null)
                         {
-                            order.FromAddress = raw.OwnerAddress.DecodeBase58();
+                            order.FromAddress = raw.OwnerAddress.HexToeBase58();
                             order.BlockTransactionId = item.TxID;
                             order.Status = OrderStatus.Paid;
-                            order.PayTime = DateTime.Now;
+                            order.PayTime = item.BlockTimestamp.ToDateTime();
+                            order.PayAmount = raw.RealAmount;
                             await _repository.UpdateAsync(order);
                             orders.Remove(order);
                             await SendAdminMessage(order);
+                        }
+                        else
+                        {
+                            if (UseDynamicAddress && UseDynamicAddressAmountMove)
+                            {
+                                //允许非准确金额支付
+                                var Move = _configuration.GetSection("DynamicAddressConfig:TRX").Get<decimal[]>() ?? [];
+                                if (Move.Length == 2)
+                                {
+                                    var Down = Move[0]; //上浮金额
+                                    var Up = Move[1]; //下浮金额
+                                    order = orders.Where(x => raw.RealAmount >= x.Amount - Down && raw.RealAmount <= x.Amount + Up)
+                                        .Where(x => x.ToAddress == raw.ToAddressBase58 && x.CreateTime < item.BlockTimestamp.ToDateTime())
+                                        .OrderByDescending(x => x.CreateTime)//优先付最后一单
+                                        .FirstOrDefault();
+                                    if (order != null)
+                                    {
+                                        order.IsDynamicAmount = true;
+                                        goto recheck;
+                                    }
+                                }
+                            }
                         }
                     }
                 }

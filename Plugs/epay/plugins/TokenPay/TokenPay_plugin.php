@@ -6,7 +6,7 @@ class TokenPay_plugin{
 		'showname'    => 'TokenPay', //支付插件显示名称
 		'author'      => 'TokenPay', //支付插件作者
 		'link'        => 'https://github.com/LightCountry/TokenPay', //支付插件作者链接
-		'types'       => ['TRX', 'USDT_TRC20', 'EVM_ETH_ETH', 'EVM_ETH_USDT_ERC20', 'EVM_ETH_USDC_ERC20', 'EVM_BSC_BNB', 'EVM_BSC_USDT_BEP20', 'EVM_BSC_USDC_BEP20', 'EVM_Polygon_MATIC', 'EVM_Polygon_USDT_ERC20', 'EVM_Polygon_USDC_ERC20'], //支付插件支持的支付方式，可选的有alipay,qqpay,wxpay,bank
+		'types'       => ['TRX', 'USDT_TRC20', 'EVM_ETH_ETH', 'EVM_ETH_USDT_ERC20', 'EVM_ETH_USDC_ERC20', 'EVM_BSC_BNB', 'EVM_BSC_USDT_BEP20', 'EVM_BSC_USDC_BEP20', 'EVM_Polygon_POL', 'EVM_Polygon_USDT_ERC20', 'EVM_Polygon_USDC_ERC20'], //支付插件支持的支付方式，可选的有alipay,qqpay,wxpay,bank
 		'inputs' => [ //支付插件要求传入的参数以及参数显示名称，可选的有appid,appkey,appsecret,appurl,appmchid
 			'appurl' => [
 				'name' => 'API接口地址',
@@ -86,7 +86,7 @@ class TokenPay_plugin{
 		echo $type;
 		$param = [
 		    'OutOrderId' => TRADE_NO, //外部订单号
-		    'OrderUserKey' => $order['uid'],   //支付用户标识
+		    'OrderUserKey' => (string)$order['uid'],   //支付用户标识
 		    'ActualAmount' => $order['realmoney'],   //订单实际支付的人民币金额，保留两位小数
 		    'Currency' => $order['typename'],   //加密货币的币种，直接以原样字符串传递即可
 		    'NotifyUrl' => $conf['localurl'].'pay/notify/'.TRADE_NO.'/',  //异步通知URL
